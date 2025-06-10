@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Simple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .chat-container {
+            width: 400px;
+            max-height: 90vh;
+            margin: 50px auto;
+            border: 1px solid #ccc;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+            clear: both;
+        }
+
+        .message.user {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .message.bot {
+            background-color: #eee;
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ccc;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chat">
+            <div class="message bot">Hola, ¿en qué puedo ayudarte?</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Escribe un mensaje..." />
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById("userInput");
+            const chat = document.getElementById("chat");
+            const text = input.value.trim();
+            if (text === "") return;
+
+            // Mensaje del usuario
+            const userMsg = document.createElement("div");
+            userMsg.className = "message user";
+            userMsg.textContent = text;
+
+           // console.log("MI MENSAJE FUE ", text)
+            chat.appendChild(userMsg);
+	    chat.scrollTop = chat.scrollHeight;  //se desplaza al fnal para ver nuevo message
+
+	    input.value = ""; //limpia el input inmediatamente
+	
+	    // Muestra mensaje "Escribiendo .." mientras espera
+            const typingIndicator = document.createElement("div");
+            typingIndicator.className = "message bot";
+            typingIndicator.textContent = "El bot está escribiendo...";
+            chat.appendChild(typingIndicator);
+            chat.scrollTop = chat.scrollHeight;
+
+            // Llama al backend con fetch
+            try {
+                const response = await fetch("http://15.204.173.7:3001/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const data = await response.json();
+
+                // Elimina el indicador de "escribiendo..."
+                chat.removeChild(typingIndicator);	    
+
+
+            // Respuesta del bot
+            const botMsg = document.createElement("div");
+            botMsg.className = "message bot";
+            botMsg.textContent = data.reply;
+            chat.appendChild(botMsg);
+            chat.scrollTop = chat.scrollHeight; // Desplaza al final para ver la respuesta del bot
+
+	   } catch (err){
+                console.error("Error al comunicarse con el backend:", err);
+                chat.removeChild(typingIndicator); // Eliminar el indicador incluso en error
+                const errorMsg = document.createElement("div");
+                errorMsg.className = "message bot";
+                errorMsg.textContent = "Lo siento, hubo un problema al conectar con el servidor.";
+                chat.appendChild(errorMsg);
+                chat.scrollTop = chat.scrollHeight;
+            }
+        }
+    </script>
+</body>
+
+</html>
